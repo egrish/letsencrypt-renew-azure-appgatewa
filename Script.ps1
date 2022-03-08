@@ -63,7 +63,8 @@ Set-Content -Path $fileName -Value $challenge.Data.Content -NoNewline;
 $blobName = $domain + "/.well-known/acme-challenge/" + $challenge.Token
 $storageAccount = Get-AzStorageAccount -ResourceGroupName $STResourceGroupName -Name $storageName
 $ctx = $storageAccount.Context
-Set-AzStorageBlobContent -File $fileName -Container "public" -Context $ctx -Blob $blobName -Force
+
+Set-AzStorageBlobContent -File $fileName -Container "public" -Context $ctx -Blob $blobName -Confirm:$false
 
 # Signal the ACME server that the challenge is ready
 $challenge | Complete-ACMEChallenge $state;
@@ -99,9 +100,17 @@ switch ($Debug)
     $true { 
         
         $blobName_tmp = $domain + "/.well-known/acme-challenge/" + "$domain.pfx"
-        Set-AzStorageBlobContent -File $fileName -Container "public" -Context $ctx -Blob $blobName_tmp
+
+		try {
+			Remove-AzStorageBlob -Container "public" -Context $ctx -Blob $blobName_tmp -Confirm:$false
+		}
+		catch {}
+
+
+        Set-AzStorageBlobContent -File $fileName -Container "public" -Context $ctx -Blob $blobName_tmp -Confirm:$false
 		Write-Host ("Password: {0}" -f $password) 
-        ;break }
+        ;break 
+	}
     default { ;break }
 }
 
